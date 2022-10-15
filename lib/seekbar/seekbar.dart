@@ -414,15 +414,15 @@ class _SeekBarPainter extends CustomPainter {
     void drawBar(double x, double progress) {
       if (x <= 0.0) return;
       //如果是分段，而且有自定义的刻度值
-      if (sectionCount > 1 && sectionTexts.length > 1) {
-        sectionTexts.forEach((item) {
-          if (progress * sectionCount >= item.position) {
-            if (item.progressColor != null) {
-              paint.color = indicatorColor = sectionColor = item.progressColor;
-            }
-          }
-        });
-      }
+      // if (sectionCount > 1 && sectionTexts.length > 1) {
+      //   sectionTexts.forEach((item) {
+      //     if (progress * sectionCount >= item.position) {
+      //       if (item.progressColor != null) {
+      //         paint.color = indicatorColor = sectionColor = item.progressColor;
+      //       }
+      //     }
+      //   });
+      // }
 
       canvas.drawPath(drawPath(progresseight, x, size.height, radius), paint);
       // canvas.drawRect(Offset(x, 0.0) & Size(width, size.height), paint);
@@ -470,30 +470,30 @@ class _SeekBarPainter extends CustomPainter {
         newBubbleHeight = bubbleHeight + bubbleInCenterY;
       }
       //计算bubble的坐标值，画出bubble，
-      double x = bubbleRadius /
-          (newBubbleHeight - bubbleRadius) *
-          math.sqrt((math.pow(newBubbleHeight - bubbleRadius, 2) -
-              math.pow(bubbleRadius, 2)));
-      double y = math.sqrt(math.pow(bubbleRadius, 2) - x * x);
-      Path bubblePath = new Path()
-        ..moveTo(value * size.width,
-            bubbleInCenter ? bubbleInCenterY : -bubbleInCenterY)
-        ..lineTo(
-            value * size.width + x,
-            bubbleInCenter
-                ? -newBubbleHeight + bubbleRadius + y + bubbleInCenterY
-                : -newBubbleHeight + bubbleRadius + y)
-        ..arcToPoint(
-            Offset(
-                value * size.width - x,
-                bubbleInCenter
-                    ? -newBubbleHeight + bubbleRadius + y + bubbleInCenterY
-                    : -newBubbleHeight + bubbleRadius + y),
-            radius: Radius.circular(bubbleRadius),
-            clockwise: false,
-            largeArc: true)
-        ..close();
-      canvas.drawPath(bubblePath, paint);
+      // double x = bubbleRadius /
+      //     (newBubbleHeight - bubbleRadius) *
+      //     math.sqrt((math.pow(newBubbleHeight - bubbleRadius, 2) -
+      //         math.pow(bubbleRadius, 2)));
+      // double y = math.sqrt(math.pow(bubbleRadius, 2) - x * x);
+      // Path bubblePath = new Path()
+      //   ..moveTo(value * size.width,
+      //       bubbleInCenter ? bubbleInCenterY : -bubbleInCenterY)
+      //   ..lineTo(
+      //       value * size.width + x,
+      //       bubbleInCenter
+      //           ? -newBubbleHeight + bubbleRadius + y + bubbleInCenterY
+      //           : -newBubbleHeight + bubbleRadius + y)
+      //   ..arcToPoint(
+      //       Offset(
+      //           value * size.width - x,
+      //           bubbleInCenter
+      //               ? -newBubbleHeight + bubbleRadius + y + bubbleInCenterY
+      //               : -newBubbleHeight + bubbleRadius + y),
+      //       radius: Radius.circular(bubbleRadius),
+      //       clockwise: false,
+      //       largeArc: true)
+      //   ..close();
+      // canvas.drawPath(bubblePath, paint);
 
       double realValue = (max - min) * value + min;
       int rv = realValue.ceil();
@@ -504,19 +504,25 @@ class _SeekBarPainter extends CustomPainter {
       Size textSize = getTextWidth(text: text, fontsize: fontsize);
 
       canvas.drawParagraph(
-          getParagraph(
-              text: text,
-              fontsize: fontsize,
-              textColor: bubbleTextColor,
-              textSize: textSize),
-          Offset(
-              value * size.width - textSize.width / 2,
-              bubbleInCenter
-                  ? -newBubbleHeight +
-                      bubbleRadius -
-                      textSize.height / 2 +
-                      bubbleInCenterY
-                  : -newBubbleHeight + bubbleRadius - textSize.height / 2));
+        getParagraph(
+            text: text,
+            fontsize: fontsize,
+            textColor: bubbleTextColor,
+            // background: bubbleColor,
+            textSize: textSize),
+        Offset(
+          value * size.width - textSize.width / 2,
+          bubbleInCenter
+              ? bubbleInCenterY + textSize.height
+              : -bubbleInCenterY - textSize.height,
+          // bubbleInCenter
+          //     ? -newBubbleHeight +
+          //         bubbleRadius -
+          //         textSize.height / 2 +
+          //         bubbleInCenterY
+          //     : -newBubbleHeight + bubbleRadius - textSize.height / 2,
+        ),
+      );
     }
 
     drawSectionText(); // draw section text 画刻度值
@@ -820,6 +826,7 @@ class _SeekBarState extends State<SeekBar> {
   void _onPanUpdate(DragUpdateDetails dragDetails) {
     RenderBox box = context.findRenderObject();
     touchPoint = box.globalToLocal(dragDetails.globalPosition);
+
     //防止绘画越界
     if (touchPoint.dx <= 0) {
       touchPoint = new Offset(0, 0.0);
@@ -833,9 +840,10 @@ class _SeekBarState extends State<SeekBar> {
     if (touchPoint.dy >= context.size.height) {
       touchPoint = new Offset(touchPoint.dx, context.size.height);
     }
+
     setState(() {
       _value = touchPoint.dx / context.size.width;
-
+      // print(_value);
       _setValue();
     });
   }
@@ -856,24 +864,29 @@ class _SeekBarState extends State<SeekBar> {
   void _setValue() {
     //这个是当前的进度 从0-1
     //这个�����值��能在这个地方获取，如果没有指定，就是容器的��度
-    if (sectionCount > 1) {
-      for (var i = 0; i < sectionCount; i++) {
-        if (_value >= i * e && _value <= (i + 1) * e) {
-          start = i * e;
-          if (i == sectionCount) {
-            end = sectionCount * e;
-          } else {
-            end = (i + 1) * e;
-          }
-          break;
-        }
-      }
-      if (_value >= start + e / 2) {
-        _value = end;
-      } else {
-        _value = start;
-      }
-    }
+    // if (sectionCount > 1) {
+    //   for (var i = 0; i < sectionCount; i++) {
+    //     if (_value >= i * e && _value <= (i + 1) * e) {
+    //       start = i * e;
+    //       if (i == sectionCount) {
+    //         end = (i + 1) * e; // sectionCount * e;
+    //       } else {
+    //         end = (i + 1) * e;
+    //       }
+    //       break;
+    //     }
+    //   }
+
+    //   print(_value);
+    //   if (_value >= start + e / 2) {
+    //     _value = end;
+    //   } else {
+    //     _value = start;
+    //   }
+
+    //   print("-------------------------------");
+    //   print(_value);
+    // }
     double realValue = length * _value + widget.min; //真实的值
 
     if (widget.onValueChanged != null) {
